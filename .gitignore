@@ -1,0 +1,3 @@
+venom*.log
+*.dump.json
+test/*.json

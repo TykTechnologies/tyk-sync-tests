@@ -1,0 +1,103 @@
+name: Tyk Sync dump Command
+description: This test suite checks if dump command works with Tyk Dashboard
+testcases:
+  - name: Run tyk-sync dump command
+    script: |
+      tyk-sync dump -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -t ../test
+      sleep 1;
+  - name: Check if dump command creates files
+    steps:
+      - script: |
+          test -d ../test
+        assertions:
+          - result.code MustEqual 0
+      - script: |
+          test -s ../test/.tyk.json
+        assertions:
+          - result.code MustEqual 0
+      - script: |
+          if find ../test -type f | grep -qvE '\.json$' | grep -qv '.gitkeep'; then
+              echo "The ../test directory contains files other than.json."
+              exit 1
+          else
+              echo "The ../test directory contains only.json files."
+          fi
+        assertions:
+          - result.code MustEqual 0
+      - script: |
+          count=$(find "../test" -type f -name "api-*\.json" | wc -l)
+          
+          if [ $count -eq 5 ]; then
+            echo "The '../test' directory contains exactly 5 JSON files starting with 'api-'."
+            exit 0
+          else
+            echo "The '../test' directory contains $count JSON files starting with 'api-', which is not exactly 5."
+            exit 1
+          fi
+        assertions:
+          - result.code MustEqual 0
+      - script: |
+          count=$(find "../test" -type f -name "oas-*\.json" | wc -l)
+          
+          if [ $count -eq 5 ]; then
+            echo "The '../test' directory contains exactly 5 JSON files starting with 'oas-'."
+            exit 0
+          else
+            echo "The '../test' directory contains $count JSON files starting with 'oas-', which is not exactly 5."
+            exit 1
+          fi
+        assertions:
+          - result.code MustEqual 0
+      - script: |
+          count=$(find "../test" -type f -name "policy-*\.json" | wc -l)
+          
+          if [ $count -eq 5 ]; then
+            echo "The '../test' directory contains exactly 5 JSON files starting with 'policy-'."
+            exit 0
+          else
+            echo "The '../test' directory contains $count JSON files starting with 'policy-', which is not exactly 5."
+            exit 1
+          fi
+        assertions:
+          - result.code MustEqual 0
+  - name: Check if .tyk.json file contains correct information
+    steps:
+      - script: |
+          jq '.type == "apidef"' ../test/.tyk.json
+        info: "type field must be apidef in .tyk.json"
+        assertions:
+          - result.code MustEqual 0
+      - script: |
+          jq '.files | length == 10' ../test/.tyk.json
+        info: ".files field in .tyk.json must contain 10 elements"
+        assertions:
+          - result.code MustEqual 0
+      - script: |
+          jq '.policies | length == 5' ../test/.tyk.json
+        info: ".policies field in .tyk.json must contain 5 elements"
+        assertions:
+          - result.code MustEqual 0
+      - script: |
+          count_api=0
+          count_oas=0
+          
+          while IFS= read -r line; do
+            file_name=$line
+            
+            if [[ $file_name =~ ^\"api-.* ]]; then
+              ((count_api++))
+            elif [[ $file_name =~ ^\"oas-.* ]]; then
+              ((count_oas++))
+            fi
+          done <<< "$(jq '.files[] |.file' ../test/.tyk.json)"
+          
+          echo "classic $count_api and oas $count_oas"
+          if [[ $count_api -eq 5 ]] && [[ $count_oas -eq 5 ]]; then
+            exit 0
+          else
+            exit 1
+          fi
+        info: ".tyk.json must contain 5 oas 5 classic api information"
+        assertions:
+          - result.systemout ShouldEqual classic 5 and oas 5
+          - result.code MustEqual 0

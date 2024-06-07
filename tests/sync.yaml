@@ -1,0 +1,71 @@
+name: Tyk Sync sync Command
+description: This test suite checks if sync command works with Tyk Dashboard
+testcases:
+  - name: Verify that no API and Policies exist on Dashboard
+    steps:
+      - info: "remove all APIs and Policies"
+        script: |
+          TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
+        assertions:
+          - result.code MustEqual 0
+      - info: "verify that no APIs left"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis'
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldHaveLength 2
+          - result.bodyjson ShouldContainKey apis
+          - result.bodyjson ShouldContainKey pages
+          - result.bodyjson.apis ShouldHaveLength 0
+          - result.bodyjson.pages ShouldEqual 1
+      - info: "verify that no Policy left"
+        type: http
+        url: '{{ .TYK_URL }}/api/portal/policies'
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldHaveLength 2
+          - result.bodyjson ShouldContainKey Data
+          - result.bodyjson ShouldContainKey Pages
+          - result.bodyjson.Data ShouldHaveLength 0
+          - result.bodyjson.Pages ShouldEqual 1
+  - name: Check if sync command creates APIs and Policies
+    steps:
+      - info: "run sync command"
+        type: exec
+        script: | 
+          tyk-sync sync -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test
+          sleep 1;
+      - info: "sync command must recreate all APIs"
+        type: http
+        method: GET
+        url: '{{ .TYK_URL }}/api/apis'
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        retry: 3
+        assertions:
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldHaveLength 2
+          - result.bodyjson ShouldContainKey apis
+          - result.bodyjson ShouldContainKey pages
+          - result.bodyjson.apis ShouldHaveLength 10
+      - info: "sync command must recreate all Policies"
+        type: http
+        method: GET
+        url: '{{ .TYK_URL }}/api/portal/policies'
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        retry: 3
+        assertions:
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldHaveLength 2
+          - result.bodyjson ShouldContainKey Data
+          - result.bodyjson ShouldContainKey Pages
+          - result.bodyjson.Data ShouldHaveLength 5
