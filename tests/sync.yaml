@@ -3,7 +3,7 @@ description: This test suite checks if sync command works with Tyk Dashboard
 testcases:
   - name: Clear all APIs and Policies
     steps:
-      - info: "run clean"
+      - info: "run clean-apis.sh to clean up resources on Tyk"
         script: |
           TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
         assertions:
