@@ -2,7 +2,13 @@
 
 set -e
 
-echo "... Clean Tyk resources"
+echo "... Clean test folder"
+rm -f ./test/*.json
+rm -f ./test/.tyk.json
+sleep 3;
+echo "... Cleaned"
+
+echo "... Clean resources on Tyk"
 TYK_AUTH=$TYK_AUTH TYK_URL=$TYK_URL ./clean-apis.sh
 echo "... Cleaned"
 
