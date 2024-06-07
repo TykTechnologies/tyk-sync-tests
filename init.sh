@@ -4,7 +4,7 @@ set -e
 
 echo "... Clean Tyk resources"
 TYK_AUTH=$TYK_AUTH TYK_URL=$TYK_URL ./clean-apis.sh
-echo "... Created"
+echo "... Cleaned"
 
 echo "... Creating 5 Classic, 5 OAS API Definitions and 5 Policies"
 MAX=5 TYK_AUTH=$TYK_AUTH TYK_URL=$TYK_URL ./create-apis.sh
