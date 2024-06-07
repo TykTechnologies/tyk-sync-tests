@@ -2,20 +2,25 @@ name: Tyk Sync dump Command
 description: This test suite checks if dump command works with Tyk Dashboard
 testcases:
   - name: Run tyk-sync dump command
-    script: |
-      tyk-sync dump -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -t ../test
-      sleep 1;
+    steps:
+      - info: "run tyk-sync dump"
+        script: |
+          tyk-sync dump -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -t ../test
+          sleep 1;
   - name: Check if dump command creates files
     steps:
-      - script: |
+      - info: "verify that output directory exists"
+        script: |
           test -d ../test
         assertions:
           - result.code MustEqual 0
-      - script: |
+      - info: "verify that .tyk.json file exists in the output directory"
+        script: |
           test -s ../test/.tyk.json
         assertions:
           - result.code MustEqual 0
-      - script: |
+      - info: "verify that the directory only contains .json files and .gitkeep file"
+        script: |
           if find ../test -type f | grep -qvE '\.json$' | grep -qv '.gitkeep'; then
               echo "The ../test directory contains files other than.json."
               exit 1
@@ -24,7 +29,8 @@ testcases:
           fi
         assertions:
           - result.code MustEqual 0
-      - script: |
+      - info: "verify that 5 classic API Definitions are dumped"
+        script: |
           count=$(find "../test" -type f -name "api-*\.json" | wc -l)
           
           if [ $count -eq 5 ]; then
