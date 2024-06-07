@@ -5,7 +5,7 @@ set -e
 echo "... Clean test folder"
 rm -f ./test/*.json
 rm -f ./test/.tyk.json
-sleep 3;
+sleep 1;
 echo "... Cleaned"
 
 echo "... Clean resources on Tyk"

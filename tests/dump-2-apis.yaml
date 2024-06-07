@@ -3,14 +3,9 @@ description: This test suite checks if dump command and its flags (--apis and --
 testcases:
   - name: Prepare testing environment
     steps:
-      - info: "run clean-apis.sh to clean up resources on Tyk"
+      - info: "clean up resources on Tyk and clean the content of test/ directory"
         script: |
           TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
-          sleep 2;
-        assertions:
-          - result.code MustEqual 0
-      - info: "remove json files in ./test directory"
-        script: |
           ./helper-clean-dump-output.sh
           sleep 2;
         assertions:
@@ -98,7 +93,11 @@ testcases:
           
             if [[ $file_name =~ ^\"api-.* ]]; then
               ((count_api++))
-            elif [[ $file_name =~ ^\"oas-.* ]]; then
+            fi
+            if [[ $file_name =~ "oas-test-api-1.json" ]]; then
+              ((count_oas++))
+            fi
+            if [[ $file_name =~ "oas-test-api-3.json" ]]; then
               ((count_oas++))
             fi
           done <<< "$(jq '.files[] |.file' ../test/.tyk.json)"
@@ -109,4 +108,102 @@ testcases:
           fi
         assertions:
           - result.systemout ShouldEqual classic 0 and oas 2
+          - result.code MustEqual 0
+  - name: Run tyk-sync dump command for 2 Classic API Definitions
+    steps:
+      - info: "clean previous dump output"
+        script: |
+          ./helper-clean-dump-output.sh
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "run tyk-sync dump command to export 2 Classic APIs"
+        script: |
+          tyk-sync dump -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -t ../test --apis="random-id-1,random-id-2"
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "verify that output directory exists"
+        script: |
+          test -d ../test
+        assertions:
+          - result.code MustEqual 0
+      - info: "verify that .tyk.json file exists in the output directory"
+        script: |
+          test -s ../test/.tyk.json
+        assertions:
+          - result.code MustEqual 0
+      - info: "verify that the directory only contains .json files and .gitkeep file"
+        script: |
+          if find ../test -type f | grep -qvE '\.json$' | grep -qv '.gitkeep'; then
+              echo "The ../test directory contains files other than .json."
+              exit 1
+          fi
+        assertions:
+          - result.code MustEqual 0
+      - info: "verify that there are no OAS API Definitions are dumped"
+        script: |
+          count=$(find "../test" -type f -name "oas-*\.json" | wc -l)
+          
+          if [ $count -ne 0 ]; then
+            echo "Dump command must only export Classic API Definitions with ID random-id-1 and random-id-2"
+            exit 1
+          fi
+        assertions:
+          - result.code MustEqual 0
+      - info: "verify that 2 Classic API Definitions are dumped"
+        script: |
+          count=$(find "../test" -type f -name "api-*\.json" | wc -l)
+          
+          if [ $count -ne 2 ]; then
+            echo "Dump command must only export Classic API Definitions with ID random-id-1 and random-id-2"
+            exit 1
+          fi
+        assertions:
+          - result.code MustEqual 0
+      - info: "verify that no policies are dumped"
+        script: |
+          count=$(find "../test" -type f -name "policy-*\.json" | wc -l)
+          
+          if [ $count -ne 0 ]; then
+            echo "Dump command should not export policies if we only want to export --oas-apis"
+            exit 1
+          fi
+        assertions:
+          - result.code MustEqual 0
+      - info: "type field must be apidef in .tyk.json"
+        script: |
+          jq '.type == "apidef"' ../test/.tyk.json
+        assertions:
+          - result.code MustEqual 0
+      - info: ".files field in .tyk.json must contain 2 elements"
+        script: |
+          jq '.files | length == 2' ../test/.tyk.json
+        assertions:
+          - result.code MustEqual 0
+      - info: ".tyk.json must contain 0 oas and 2 classic api information"
+        script: |
+          count_api=0
+          count_oas=0
+          
+          while IFS= read -r line; do
+            file_name=$line
+          
+            if [[ $file_name =~ ^\"oas-.* ]]; then
+              ((count_oas++))
+            fi
+            if [[ $file_name =~ "api-random-id-1.json" ]]; then
+              ((count_api++))
+            fi
+            if [[ $file_name =~ "api-random-id-2.json" ]]; then
+              ((count_api++))
+            fi
+          done <<< "$(jq '.files[] |.file' ../test/.tyk.json)"
+          
+          echo "classic $count_api and oas $count_oas"
+          if [[ $count_api -eq 0 ]] && [[ $count_oas -eq 2 ]]; then
+            exit 0
+          fi
+        assertions:
+          - result.systemout ShouldEqual classic 2 and oas 0
           - result.code MustEqual 0
