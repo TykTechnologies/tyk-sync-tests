@@ -107,3 +107,16 @@ testcases:
         assertions:
           - result.systemout ShouldEqual classic 5 and oas 5
           - result.code MustEqual 0
+  - name: Check if categories are dumped
+    steps:
+      - info: "check if categories are dumped for OAS APIs"
+        script: |
+          jq '.categories | length == 1' ../test/oas-test-api-1.json
+        assertions:
+          - result.code MustEqual 0
+          - result.systemout ShouldEqual true
+      - info: "check if correct category dumped"
+        script: |
+          jq '.categories[0]' ../test/oas-test-api-1.json
+        assertions:
+          - result.systemout ShouldContainSubstring oascategory
