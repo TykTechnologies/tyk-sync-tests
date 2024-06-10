@@ -68,14 +68,14 @@ testcases:
           - result.code MustEqual 0
   - name: Check if .tyk.json file contains correct information
     steps:
-      - script: |
+      - info: "type field must be apidef in .tyk.json"
+        script: |
           jq '.type == "apidef"' ../test/.tyk.json
-        info: "type field must be apidef in .tyk.json"
         assertions:
           - result.code MustEqual 0
-      - script: |
+      - info: ".files field in .tyk.json must contain 10 elements"
+        script: |
           jq '.files | length == 10' ../test/.tyk.json
-        info: ".files field in .tyk.json must contain 10 elements"
         assertions:
           - result.code MustEqual 0
       - script: |
