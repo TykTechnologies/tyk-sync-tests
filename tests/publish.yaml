@@ -104,7 +104,7 @@ testcases:
         assertions:
           - result.systemout ShouldEqual classic 0 and oas 1
           - result.code MustEqual 0
-  - name: Publish exported OAS API Definition with tyk-sync update
+  - name: Publish exported OAS API Definition with tyk-sync publish command
     steps:
       - info: "remove OAS API Definition with ID test-api-2 (which was exported in previous step) from Tyk"
         type: http
