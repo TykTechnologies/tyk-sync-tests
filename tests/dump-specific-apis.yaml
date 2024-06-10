@@ -10,7 +10,7 @@ testcases:
           sleep 2;
         assertions:
           - result.code MustEqual 0
-      - info: "create 3 classic and OAS API Definitions, and 2 Policies"
+      - info: "create 3 classic and OAS API Definitions, and 3 Policies"
         script: |
           set -e
           MAX=3 TYK_AUTH=$TYK_AUTH TYK_URL=$TYK_URL ../create-apis.sh
