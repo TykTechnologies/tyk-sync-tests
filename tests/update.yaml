@@ -1,0 +1,660 @@
+name: Tyk Sync dump Command with --apis and --oas-apis flags
+description: This test suite checks if dump command and its flags (--apis and --oas-apis) work with Tyk Dashboard
+testcases:
+  - name: Prepare testing environment
+    steps:
+      - info: "clean up resources on Tyk and clean the content of test/ directory"
+        script: |
+          TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
+          ./helper-clean-dump-output.sh
+          sleep 2;
+        assertions:
+          - result.code MustEqual 0
+      - info: "create 3 classic and OAS API Definitions, and 3 Policies"
+        script: |
+          set -e
+          MAX=3 TYK_AUTH=$TYK_AUTH TYK_URL=$TYK_URL ../create-apis.sh
+          sleep 2;
+        assertions:
+          - result.code MustEqual 0
+      - info: "run tyk-sync dump command to export 1 OAS API"
+        script: |
+          tyk-sync dump -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -t ../test
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+  - name: Update exported OAS API Definition with tyk-sync update
+    steps:
+      - info: "update OAS API Definition with ID test-api-1"
+        script: |
+          jq '.oas."x-tyk-api-gateway".info.name = "testname1"' ../test/oas-test-api-1.json > ../test/.oas-test-api-1.json && mv ../test/.oas-test-api-1.json ../test/oas-test-api-1.json
+          jq '.oas."x-tyk-api-gateway".info.name = "testname2"' ../test/oas-test-api-2.json > ../test/.oas-test-api-2.json && mv ../test/.oas-test-api-2.json ../test/oas-test-api-2.json
+          tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "tyk-sync update command should update specified OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "testname1"
+      - info: "tyk-sync update command should update existing OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "testname2"
+  - name: Update specific OAS API Definition with tyk-sync update
+    steps:
+      - info: "clean up resources on Tyk and clean the content of test/ directory"
+        script: |
+          TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
+          ./helper-clean-dump-output.sh
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "create 3 classic and OAS API Definitions, and 3 Policies"
+        script: |
+          set -e
+          MAX=3 TYK_AUTH=$TYK_AUTH TYK_URL=$TYK_URL ../create-apis.sh
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "run tyk-sync dump command to export 1 OAS API"
+        script: |
+          tyk-sync dump -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -t ../test
+        assertions:
+          - result.code MustEqual 0
+      - info: "update OAS API Definition with ID test-api-1"
+        script: |
+          jq '.oas."x-tyk-api-gateway".info.name = "testname1"' ../test/oas-test-api-1.json > ../test/.oas-test-api-1.json && mv ../test/.oas-test-api-1.json ../test/oas-test-api-1.json
+          jq '.oas."x-tyk-api-gateway".info.name = "testname2"' ../test/oas-test-api-2.json > ../test/.oas-test-api-2.json && mv ../test/.oas-test-api-2.json ../test/oas-test-api-2.json
+          tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test --oas-apis="test-api-2"
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "tyk-sync update command should NOT update non-specified OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "test-api-1"
+      - info: "tyk-sync update command should update specific OAS API Definition identified via test-api-2"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "testname2"
+  - name: Update multiple specific OAS API Definitions with tyk-sync update
+    steps:
+      - info: "clean up resources on Tyk and clean the content of test/ directory"
+        script: |
+          TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
+          ./helper-clean-dump-output.sh
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "create 3 classic and OAS API Definitions, and 3 Policies"
+        script: |
+          set -e
+          MAX=3 TYK_AUTH=$TYK_AUTH TYK_URL=$TYK_URL ../create-apis.sh
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "run tyk-sync dump command to export 1 OAS API"
+        script: |
+          tyk-sync dump -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -t ../test
+        assertions:
+          - result.code MustEqual 0
+      - info: "update OAS API Definition with ID test-api-1"
+        script: |
+          jq '.oas."x-tyk-api-gateway".info.name = "testname11"' ../test/oas-test-api-1.json > ../test/.oas-test-api-1.json && mv ../test/.oas-test-api-1.json ../test/oas-test-api-1.json
+          jq '.oas."x-tyk-api-gateway".info.name = "testname22"' ../test/oas-test-api-2.json > ../test/.oas-test-api-2.json && mv ../test/.oas-test-api-2.json ../test/oas-test-api-2.json
+          tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test --oas-apis="test-api-1,test-api-2"
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "tyk-sync update command should update specified OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "testname11"
+      - info: "tyk-sync update command should update specific OAS API Definition identified via test-api-2"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "testname22"
+  - name: Update specific Classic API Definition with tyk-sync update
+    steps:
+      - info: "update clasiic API Definition with ID random-id-1"
+        script: |
+          jq '.api_definition.name = "testname2"' ../test/api-random-id-2.json > ../test/.api-random-id-2.json && mv ../test/.api-random-id-2.json ../test/api-random-id-2.json
+          jq '.api_definition.name = "testname3"' ../test/api-random-id-3.json > ../test/.api-random-id-3.json && mv ../test/.api-random-id-3.json ../test/api-random-id-3.json
+          tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test --apis="random-id-2"
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "tyk-sync update command should NOT update non-specified Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "test-api-1"
+      - info: "tyk-sync update command should update specified Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "testname2"
+  - name: Update multiple specific Classic API Definitions with tyk-sync update
+    steps:
+      - info: "update clasiic API Definition with ID random-id-1"
+        script: |
+          jq '.api_definition.name = "another1"' ../test/api-random-id-1.json > ../test/.api-random-id-1.json && mv ../test/.api-random-id-1.json ../test/api-random-id-1.json
+          jq '.api_definition.name = "another2"' ../test/api-random-id-2.json > ../test/.api-random-id-2.json && mv ../test/.api-random-id-2.json ../test/api-random-id-2.json
+          jq '.api_definition.name = "another3"' ../test/api-random-id-3.json > ../test/.api-random-id-3.json && mv ../test/.api-random-id-3.json ../test/api-random-id-3.json
+          tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test --apis="random-id-2,random-id-3"
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "tyk-sync update command should NOT update non-specified Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "test-api-1"
+      - info: "tyk-sync update command should update specified Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "another2"
+      - info: "tyk-sync update command should update specified Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-3'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "another3"
+  - name: Update 1 specific Classic API Definitions and 1 OAS API Definition with tyk-sync update
+    steps:
+      - info: "clean up resources on Tyk and clean the content of test/ directory"
+        script: |
+          TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
+          ./helper-clean-dump-output.sh
+          sleep 2;
+        assertions:
+          - result.code MustEqual 0
+      - info: "create 3 classic and OAS API Definitions, and 3 Policies"
+        script: |
+          set -e
+          MAX=3 TYK_AUTH=$TYK_AUTH TYK_URL=$TYK_URL ../create-apis.sh
+          sleep 2;
+        assertions:
+          - result.code MustEqual 0
+      - info: "run tyk-sync dump command to export 1 OAS API"
+        script: |
+          tyk-sync dump -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -t ../test
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "update classic Classic and OAS API Definitions"
+        script: |
+          jq '.api_definition.name = "another1"' ../test/api-random-id-1.json > ../test/.api-random-id-1.json && mv ../test/.api-random-id-1.json ../test/api-random-id-1.json
+          jq '.api_definition.name = "another2"' ../test/api-random-id-2.json > ../test/.api-random-id-2.json && mv ../test/.api-random-id-2.json ../test/api-random-id-2.json
+          jq '.api_definition.name = "another3"' ../test/api-random-id-3.json > ../test/.api-random-id-3.json && mv ../test/.api-random-id-3.json ../test/api-random-id-3.json
+          jq '.oas."x-tyk-api-gateway".info.name = "testname11"' ../test/oas-test-api-1.json > ../test/.oas-test-api-1.json && mv ../test/.oas-test-api-1.json ../test/oas-test-api-1.json
+          jq '.oas."x-tyk-api-gateway".info.name = "testname22"' ../test/oas-test-api-2.json > ../test/.oas-test-api-2.json && mv ../test/.oas-test-api-2.json ../test/oas-test-api-2.json
+
+          tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test --apis="random-id-3" --oas-apis="test-api-1"
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "tyk-sync update command should NOT update non-specified first Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "test-api-1"
+      - info: "tyk-sync update command should NOT update non-specified second Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "test-api-2"
+      - info: "tyk-sync update command should update specified Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-3'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "another3"
+      - info: "tyk-sync update command should update specified OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "testname11"
+      - info: "tyk-sync update command should NOT update non-specified second OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "test-api-2"
+      - info: "tyk-sync update command should NOT update non-specified third OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-3'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "test-api-3"
+  - name: Update 2 specific Classic API Definitions and 1 OAS API Definition with tyk-sync update
+    steps:
+      - info: "clean up resources on Tyk and clean the content of test/ directory"
+        script: |
+          TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
+          ./helper-clean-dump-output.sh
+          sleep 2;
+        assertions:
+          - result.code MustEqual 0
+      - info: "create 3 classic and OAS API Definitions, and 3 Policies"
+        script: |
+          set -e
+          MAX=3 TYK_AUTH=$TYK_AUTH TYK_URL=$TYK_URL ../create-apis.sh
+          sleep 2;
+        assertions:
+          - result.code MustEqual 0
+      - info: "run tyk-sync dump command to export 1 OAS API"
+        script: |
+          tyk-sync dump -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -t ../test
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "update classic Classic and OAS API Definitions"
+        script: |
+          jq '.api_definition.name = "another1"' ../test/api-random-id-1.json > ../test/.api-random-id-1.json && mv ../test/.api-random-id-1.json ../test/api-random-id-1.json
+          jq '.api_definition.name = "another2"' ../test/api-random-id-2.json > ../test/.api-random-id-2.json && mv ../test/.api-random-id-2.json ../test/api-random-id-2.json
+          jq '.oas."x-tyk-api-gateway".info.name = "testname22"' ../test/oas-test-api-2.json > ../test/.oas-test-api-2.json && mv ../test/.oas-test-api-2.json ../test/oas-test-api-2.json
+
+          tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test --apis="random-id-1,random-id-2" --oas-apis="test-api-2"
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "tyk-sync update command should NOT update non-specified third Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-3'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "test-api-3"
+      - info: "tyk-sync update command should update specified first Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "another1"
+      - info: "tyk-sync update command should update specified second Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "another2"
+      - info: "tyk-sync update command should update specified OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "testname22"
+      - info: "tyk-sync update command should NOT update non-specified first OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "test-api-1"
+      - info: "tyk-sync update command should NOT update non-specified third OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-3'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "test-api-3"
+  - name: Update 1 specific Classic API Definitions and 2 OAS API Definition with tyk-sync update
+    steps:
+      - info: "clean up resources on Tyk and clean the content of test/ directory"
+        script: |
+          TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
+          ./helper-clean-dump-output.sh
+          sleep 2;
+        assertions:
+          - result.code MustEqual 0
+      - info: "create 3 classic and OAS API Definitions, and 3 Policies"
+        script: |
+          set -e
+          MAX=3 TYK_AUTH=$TYK_AUTH TYK_URL=$TYK_URL ../create-apis.sh
+          sleep 2;
+        assertions:
+          - result.code MustEqual 0
+      - info: "run tyk-sync dump command to export 1 OAS API"
+        script: |
+          tyk-sync dump -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -t ../test
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "update classic Classic and OAS API Definitions"
+        script: |
+          jq '.api_definition.name = "another2"' ../test/api-random-id-2.json > ../test/.api-random-id-2.json && mv ../test/.api-random-id-2.json ../test/api-random-id-2.json
+          jq '.oas."x-tyk-api-gateway".info.name = "testname22"' ../test/oas-test-api-2.json > ../test/.oas-test-api-2.json && mv ../test/.oas-test-api-2.json ../test/oas-test-api-2.json
+          jq '.oas."x-tyk-api-gateway".info.name = "testname33"' ../test/oas-test-api-3.json > ../test/.oas-test-api-3.json && mv ../test/.oas-test-api-3.json ../test/oas-test-api-3.json
+
+          tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test --apis="random-id-2" --oas-apis="test-api-2,test-api-3"
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "tyk-sync update command should NOT update non-specified first Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "test-api-1"
+      - info: "tyk-sync update command should NOT update non-specified third Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-3'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "test-api-3"
+      - info: "tyk-sync update command should update specified second Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "another2"
+      - info: "tyk-sync update command should update specified second OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "testname22"
+      - info: "tyk-sync update command should update specified third OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-3'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "testname33"
+      - info: "tyk-sync update command should NOT update non-specified first OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "test-api-1"
+  - name: Update 2 specific Classic API Definitions and 2 OAS API Definition with tyk-sync update
+    steps:
+      - info: "update classic Classic and OAS API Definitions"
+        script: |
+          jq '.api_definition.name = "another1"' ../test/api-random-id-1.json > ../test/.api-random-id-1.json && mv ../test/.api-random-id-1.json ../test/api-random-id-1.json
+
+          tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test --apis="random-id-1,random-id-2" --oas-apis="test-api-2,test-api-3"
+          sleep 1;
+        assertions:
+          - result.code MustEqual 0
+      - info: "tyk-sync update command should NOT update non-specified third Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-3'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "test-api-3"
+      - info: "tyk-sync update command should update specified first Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "another1"
+      - info: "tyk-sync update command should update specified second Classic API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/random-id-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "api_definition"
+          - result.bodyjson.api_definition.name ShouldContainSubstring "another2"
+      - info: "tyk-sync update command should update specified second OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-2'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "testname22"
+      - info: "tyk-sync update command should update specified third OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-3'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "testname33"
+      - info: "tyk-sync update command should NOT update non-specified first OAS API Definition"
+        type: http
+        url: '{{ .TYK_URL }}/api/apis/oas/test-api-1'
+        method: GET
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        assertions:
+          - result.statuscode ShouldEqual 200
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldContainKey "info"
+          - result.bodyjson ShouldContainKey "x-tyk-api-gateway"
+          - result.bodyjson.x-tyk-api-gateway.info.name ShouldEqual "test-api-1"
