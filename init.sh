@@ -26,4 +26,4 @@ echo "... Testing tyk-sync dump command with specific APIs"
 venom run --output-dir=logs --stop-on-failure -vv ./tests/dump-specific-apis.yaml --var="TYK_AUTH=$TYK_AUTH" --var="TYK_URL=$TYK_URL"
 
 echo "... Testing tyk-sync update command to update resources"
-venom run --output-dir=logs --stop-on-failure -vv ./tests/update.yaml --var="TYK_AUTH=$TYK_AUTH" --var="TYK_URL=$TYK_URL"
+venom run --output-dir=logs --stop-on-failure -vv ./tests/publish.yaml --var="TYK_AUTH=$TYK_AUTH" --var="TYK_URL=$TYK_URL"
