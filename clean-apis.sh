@@ -21,4 +21,4 @@ handle_error() {
 
 trap 'handle_error $LINENO' ERR
 
-curl -sL https://raw.githubusercontent.com/buraksekili/populate-apis/master/clean.sh | TYK_AUTH="$TYK_AUTH" TYK_URL="$TYK_URL" bash
+curl -sL https://raw.githubusercontent.com/buraksekili/populate-apis/master/clean.sh | TYK_AUTH="$TYK_AUTH" TYK_URL="$TYK_URL" bash > /dev/null 2>&1
