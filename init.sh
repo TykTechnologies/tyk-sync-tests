@@ -3,6 +3,9 @@ cd "$(dirname "$0")"
 
 set -e
 
+curl https://github.com/ovh/venom/releases/download/v1.1.0/venom.linux-amd64 -L -o /usr/local/bin/venom && chmod +x /usr/local/bin/venom
+echo "using venom $(venom -h)"
+
 initTykResources() {
   echo "... Clean test folder"
   rm -f ./test/*.json
