@@ -38,8 +38,8 @@ testcases:
           - result.bodyjson ShouldHaveLength 2
           - result.bodyjson ShouldContainKey Data
           - result.bodyjson ShouldContainKey Pages
-          - result.bodyjson.Pages ShouldBeNumber
-          - result.bodyjson.Pages ShouldEqual 1
+          - result.bodyjson.pages ShouldEqual 1
+          - result.bodyjson.data ShouldHaveLength 0
   - name: Check if sync command creates APIs and Policies
     steps:
       - info: "run sync command"
