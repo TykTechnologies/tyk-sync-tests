@@ -15,7 +15,7 @@ if ! command -v jq &> /dev/null; then
     exit 1
 fi
 
-curl https://github.com/ovh/venom/releases/download/v1.1.0/venom.linux-amd64 -L -o /usr/local/bin/venom && chmod +x /usr/local/bin/venom
+curl https://github.com/ovh/venom/releases/download/v1.2.0/venom.linux-amd64 -L -o /usr/local/bin/venom && chmod +x /usr/local/bin/venom
 echo "using venom $(venom -h)"
 
 TYK_AUTH=$(echo "$TYK_AUTH" | xargs)
