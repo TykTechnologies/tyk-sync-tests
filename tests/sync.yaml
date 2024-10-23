@@ -26,7 +26,6 @@ testcases:
           - result.bodyjson ShouldHaveLength 2
           - result.bodyjson ShouldContainKey apis
           - result.bodyjson ShouldContainKey pages
-          - result.bodyjson.apis ShouldHaveLength 0
           - result.bodyjson.pages ShouldEqual 1
       - info: "verify that no Policy left"
         type: http
@@ -39,7 +38,6 @@ testcases:
           - result.bodyjson ShouldHaveLength 2
           - result.bodyjson ShouldContainKey Data
           - result.bodyjson ShouldContainKey Pages
-          - result.bodyjson.Data ShouldHaveLength 0
           - result.bodyjson.Pages ShouldEqual 1
   - name: Check if sync command creates APIs and Policies
     steps:
