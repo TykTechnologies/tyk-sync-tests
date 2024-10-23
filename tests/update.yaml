@@ -5,6 +5,8 @@ testcases:
     steps:
       - info: "clean up resources on Tyk and clean the content of test/ directory"
         script: |
+          #!/bin/bash
+
           TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
           ./helper-clean-dump-output.sh
           sleep 2;
@@ -27,6 +29,8 @@ testcases:
     steps:
       - info: "update OAS API Definition with ID test-api-1"
         script: |
+          #!/bin/bash
+
           jq '.oas."x-tyk-api-gateway".info.name = "testname1"' ../test/oas-test-api-1.json > ../test/.oas-test-api-1.json && mv ../test/.oas-test-api-1.json ../test/oas-test-api-1.json
           jq '.oas."x-tyk-api-gateway".info.name = "testname2"' ../test/oas-test-api-2.json > ../test/.oas-test-api-2.json && mv ../test/.oas-test-api-2.json ../test/oas-test-api-2.json
           tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test
@@ -63,6 +67,8 @@ testcases:
     steps:
       - info: "clean up resources on Tyk and clean the content of test/ directory"
         script: |
+          #!/bin/bash
+
           TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
           ./helper-clean-dump-output.sh
           sleep 1;
@@ -82,6 +88,8 @@ testcases:
           - result.code MustEqual 0
       - info: "update OAS API Definition with ID test-api-1"
         script: |
+          #!/bin/bash
+
           jq '.oas."x-tyk-api-gateway".info.name = "testname1"' ../test/oas-test-api-1.json > ../test/.oas-test-api-1.json && mv ../test/.oas-test-api-1.json ../test/oas-test-api-1.json
           jq '.oas."x-tyk-api-gateway".info.name = "testname2"' ../test/oas-test-api-2.json > ../test/.oas-test-api-2.json && mv ../test/.oas-test-api-2.json ../test/oas-test-api-2.json
           tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test --oas-apis="test-api-2"
@@ -118,6 +126,8 @@ testcases:
     steps:
       - info: "clean up resources on Tyk and clean the content of test/ directory"
         script: |
+          #!/bin/bash
+
           TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
           ./helper-clean-dump-output.sh
           sleep 1;
@@ -137,6 +147,8 @@ testcases:
           - result.code MustEqual 0
       - info: "update OAS API Definition with ID test-api-1"
         script: |
+          #!/bin/bash
+
           jq '.oas."x-tyk-api-gateway".info.name = "testname11"' ../test/oas-test-api-1.json > ../test/.oas-test-api-1.json && mv ../test/.oas-test-api-1.json ../test/oas-test-api-1.json
           jq '.oas."x-tyk-api-gateway".info.name = "testname22"' ../test/oas-test-api-2.json > ../test/.oas-test-api-2.json && mv ../test/.oas-test-api-2.json ../test/oas-test-api-2.json
           tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test --oas-apis="test-api-1,test-api-2"
@@ -173,6 +185,8 @@ testcases:
     steps:
       - info: "update clasiic API Definition with ID random-id-1"
         script: |
+          #!/bin/bash
+
           jq '.api_definition.name = "testname2"' ../test/api-random-id-2.json > ../test/.api-random-id-2.json && mv ../test/.api-random-id-2.json ../test/api-random-id-2.json
           jq '.api_definition.name = "testname3"' ../test/api-random-id-3.json > ../test/.api-random-id-3.json && mv ../test/.api-random-id-3.json ../test/api-random-id-3.json
           tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test --apis="random-id-2"
@@ -207,6 +221,8 @@ testcases:
     steps:
       - info: "update clasiic API Definition with ID random-id-1"
         script: |
+          #!/bin/bash
+
           jq '.api_definition.name = "another1"' ../test/api-random-id-1.json > ../test/.api-random-id-1.json && mv ../test/.api-random-id-1.json ../test/api-random-id-1.json
           jq '.api_definition.name = "another2"' ../test/api-random-id-2.json > ../test/.api-random-id-2.json && mv ../test/.api-random-id-2.json ../test/api-random-id-2.json
           jq '.api_definition.name = "another3"' ../test/api-random-id-3.json > ../test/.api-random-id-3.json && mv ../test/.api-random-id-3.json ../test/api-random-id-3.json
@@ -261,6 +277,8 @@ testcases:
           - result.code MustEqual 0
       - info: "create 3 classic and OAS API Definitions, and 3 Policies"
         script: |
+          #!/bin/bash
+
           set -e
           MAX=3 TYK_AUTH=$TYK_AUTH TYK_URL=$TYK_URL ../create-apis.sh
           sleep 2;
@@ -274,6 +292,8 @@ testcases:
           - result.code MustEqual 0
       - info: "update classic Classic and OAS API Definitions"
         script: |
+          #!/bin/bash
+
           jq '.api_definition.name = "another1"' ../test/api-random-id-1.json > ../test/.api-random-id-1.json && mv ../test/.api-random-id-1.json ../test/api-random-id-1.json
           jq '.api_definition.name = "another2"' ../test/api-random-id-2.json > ../test/.api-random-id-2.json && mv ../test/.api-random-id-2.json ../test/api-random-id-2.json
           jq '.api_definition.name = "another3"' ../test/api-random-id-3.json > ../test/.api-random-id-3.json && mv ../test/.api-random-id-3.json ../test/api-random-id-3.json
@@ -363,6 +383,8 @@ testcases:
     steps:
       - info: "clean up resources on Tyk and clean the content of test/ directory"
         script: |
+          #!/bin/bash
+
           TYK_AUTH='{{.TYK_AUTH}}' TYK_URL='{{ .TYK_URL }}' ../clean-apis.sh
           ./helper-clean-dump-output.sh
           sleep 2;
@@ -383,6 +405,8 @@ testcases:
           - result.code MustEqual 0
       - info: "update classic Classic and OAS API Definitions"
         script: |
+          #!/bin/bash
+
           jq '.api_definition.name = "another1"' ../test/api-random-id-1.json > ../test/.api-random-id-1.json && mv ../test/.api-random-id-1.json ../test/api-random-id-1.json
           jq '.api_definition.name = "another2"' ../test/api-random-id-2.json > ../test/.api-random-id-2.json && mv ../test/.api-random-id-2.json ../test/api-random-id-2.json
           jq '.oas."x-tyk-api-gateway".info.name = "testname22"' ../test/oas-test-api-2.json > ../test/.oas-test-api-2.json && mv ../test/.oas-test-api-2.json ../test/oas-test-api-2.json
@@ -490,6 +514,8 @@ testcases:
           - result.code MustEqual 0
       - info: "update classic Classic and OAS API Definitions"
         script: |
+          #!/bin/bash
+
           jq '.api_definition.name = "another2"' ../test/api-random-id-2.json > ../test/.api-random-id-2.json && mv ../test/.api-random-id-2.json ../test/api-random-id-2.json
           jq '.oas."x-tyk-api-gateway".info.name = "testname22"' ../test/oas-test-api-2.json > ../test/.oas-test-api-2.json && mv ../test/.oas-test-api-2.json ../test/oas-test-api-2.json
           jq '.oas."x-tyk-api-gateway".info.name = "testname33"' ../test/oas-test-api-3.json > ../test/.oas-test-api-3.json && mv ../test/.oas-test-api-3.json ../test/oas-test-api-3.json
@@ -577,6 +603,8 @@ testcases:
     steps:
       - info: "update classic Classic and OAS API Definitions"
         script: |
+          #!/bin/bash
+
           jq '.api_definition.name = "another1"' ../test/api-random-id-1.json > ../test/.api-random-id-1.json && mv ../test/.api-random-id-1.json ../test/api-random-id-1.json
 
           tyk-sync update -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test --apis="random-id-1,random-id-2" --oas-apis="test-api-2,test-api-3"

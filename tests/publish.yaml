@@ -37,6 +37,8 @@ testcases:
           - result.code MustEqual 0
       - info: "verify that the directory only contains .json files and .gitkeep file"
         script: |
+          #!/bin/bash
+
           if find ../test -type f | grep -qvE '\.json$' | grep -qv '.gitkeep'; then
               echo "The ../test directory contains files other than .json."
               exit 1
@@ -45,6 +47,8 @@ testcases:
           - result.code MustEqual 0
       - info: "verify that there are no classic API Definitions are dumped"
         script: |
+          #!/bin/bash
+
           count=$(find "../test" -type f -name "api-*\.json" | wc -l)
           
           if [ $count -ne 0 ]; then
@@ -54,6 +58,8 @@ testcases:
           - result.code MustEqual 0
       - info: "verify that 1 OAS API Definitions are dumped"
         script: |
+          #!/bin/bash
+
           count=$(find "../test" -type f -name "oas-*\.json" | wc -l)
           
           if [ $count -ne 1 ]; then
@@ -63,6 +69,8 @@ testcases:
           - result.code MustEqual 0
       - info: "verify that no policies are dumped"
         script: |
+          #!/bin/bash
+
           count=$(find "../test" -type f -name "policy-*\.json" | wc -l)
           
           if [ $count -ne 0 ]; then
@@ -83,6 +91,8 @@ testcases:
           - result.code MustEqual 0
       - info: ".tyk.json must contain 1 oas and 0 classic api information"
         script: |
+          #!/bin/bash
+
           count_api=0
           count_oas=0
           
