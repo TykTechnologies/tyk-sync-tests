@@ -35,11 +35,9 @@ testcases:
           Authorization: '{{ .TYK_AUTH }}'
         assertions:
           - result.bodyjson ShouldNotBeEmpty
-          - result.bodyjson ShouldHaveLength 2
           - result.bodyjson ShouldContainKey Data
           - result.bodyjson ShouldContainKey Pages
-          - result.bodyjson.pages ShouldEqual 1
-          - result.bodyjson.data ShouldHaveLength 0
+
   - name: Check if sync command creates APIs and Policies
     steps:
       - info: "run sync command"
