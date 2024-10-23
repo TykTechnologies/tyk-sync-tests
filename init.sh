@@ -3,6 +3,13 @@ cd "$(dirname "$0")"
 
 set -e
 
+if which tyk-sync &> /dev/null; then
+    echo "tyk-sync exists on the machine, version: $(tyk-sync version)"
+else
+    echo "tyk-sync does not exist"
+    exit 1
+fi
+
 curl https://github.com/ovh/venom/releases/download/v1.1.0/venom.linux-amd64 -L -o /usr/local/bin/venom && chmod +x /usr/local/bin/venom
 echo "using venom $(venom -h)"
 
