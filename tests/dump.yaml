@@ -31,6 +31,7 @@ testcases:
           - result.code MustEqual 0
       - info: "verify that 5 classic API Definitions are dumped"
         script: |
+          #!/bin/bash
           count=$(find "../test" -type f -name "api-*\.json" | wc -l)
           
           if [ $count -eq 5 ]; then
@@ -43,6 +44,8 @@ testcases:
         assertions:
           - result.code MustEqual 0
       - script: |
+          #!/bin/bash
+
           count=$(find "../test" -type f -name "oas-*\.json" | wc -l)
           
           if [ $count -eq 5 ]; then
@@ -55,6 +58,8 @@ testcases:
         assertions:
           - result.code MustEqual 0
       - script: |
+          #!/bin/bash
+
           count=$(find "../test" -type f -name "policy-*\.json" | wc -l)
           
           if [ $count -eq 5 ]; then
@@ -84,6 +89,8 @@ testcases:
         assertions:
           - result.code MustEqual 0
       - script: |
+          #!/bin/bash
+
           count_api=0
           count_oas=0
           
