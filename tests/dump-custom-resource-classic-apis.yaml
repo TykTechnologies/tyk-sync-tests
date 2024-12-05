@@ -1,0 +1,40 @@
+name: Tyk Sync dump Command
+description: This test suite checks if dump command works with Tyk Dashboard
+testcases:
+  - name: Run tyk-sync dump cr command
+    steps:
+      - info: "run tyk-sync dump cr"
+        script: |
+          tyk-sync dump cr -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -t ../test
+          sleep 1;
+  - name: Check if dump command creates files
+    steps:
+      - info: "verify that output directory exists"
+        script: |
+          test -d ../test
+        assertions:
+          - result.code MustEqual 0
+      - info: "verify that the directory only contains .yaml files and .gitkeep file"
+        script: |
+          if find ../test -type f | grep -qvE '\.yaml$' | grep -qv '.gitkeep'; then
+              echo "The ../test directory contains files other than .yaml."
+              exit 1
+          else
+              echo "The ../test directory contains only .yaml files."
+          fi
+        assertions:
+          - result.code MustEqual 0
+      - info: "verify that 5 classic API Definitions are dumped"
+        script: |
+          #!/bin/bash
+          count=$(find "../test" -type f -name "*\.yaml" | wc -l)
+          
+          if [ $count -eq 5 ]; then
+            echo "The '../test' directory contains exactly 5 YAML files."
+            exit 0
+          else
+            echo "The '../test' directory contains $count YAML files, which is not exactly 5."
+            exit 1
+          fi
+        assertions:
+          - result.code MustEqual 0

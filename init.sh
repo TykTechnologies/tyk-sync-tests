@@ -60,3 +60,8 @@ initTykResources
 
 echo "... Testing tyk-sync update command to update resources"
 venom run --output-dir=./logs --stop-on-failure -vv ./tests/update.yaml --var="TYK_AUTH=$TYK_AUTH" --var="TYK_URL=$TYK_URL"
+
+initTykResources
+
+echo "... Testing tyk-sync dump cr"
+venom run --output-dir=./logs --stop-on-failure -vv ./tests/dump-custom-resource-classic-apis.yaml --var="TYK_AUTH=$TYK_AUTH" --var="TYK_URL=$TYK_URL"
