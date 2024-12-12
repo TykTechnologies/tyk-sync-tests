@@ -1,4 +1,4 @@
-name: Tyk Sync dump Command
+name: Tyk Sync dump Custom Resource Command
 description: This test suite checks if dump command works with Tyk Dashboard
 testcases:
   - name: Run tyk-sync dump cr command
