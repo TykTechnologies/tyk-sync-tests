@@ -42,10 +42,12 @@ testcases:
     steps:
       - info: "run sync command"
         type: exec
+        name: Run exec command to sync APIs
         script: |
           tyk-sync sync -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test
           sleep 1;
       - info: "sync command must recreate all APIs"
+        name: Fetch all APIs to confirm if they were created
         type: http
         method: GET
         url: '{{ .TYK_URL }}/api/apis'
@@ -60,6 +62,7 @@ testcases:
           - result.bodyjson ShouldContainKey pages
           - result.bodyjson.apis ShouldHaveLength 10
       - info: "sync command must recreate all Policies"
+        name: Fetch all Policies to confirm if they were synced
         type: http
         method: GET
         url: '{{ .TYK_URL }}/api/portal/policies'
@@ -73,3 +76,87 @@ testcases:
           - result.bodyjson ShouldContainKey Data
           - result.bodyjson ShouldContainKey Pages
           - result.bodyjson.Data ShouldHaveLength 5
+
+  - name: Check if sync command creates APIs and Policies
+    steps:
+      - info: "run sync command"
+        type: exec
+        name: Run exec command to sync APIs
+        script: |
+          tyk-sync sync -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test
+          sleep 1;
+      - info: "sync command must recreate all APIs"
+        name: Fetch all APIs to confirm if they were created
+        type: http
+        method: GET
+        url: '{{ .TYK_URL }}/api/apis'
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        retry: 3
+        assertions:
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldHaveLength 2
+          - result.bodyjson ShouldContainKey apis
+          - result.bodyjson ShouldContainKey pages
+          - result.bodyjson.apis ShouldHaveLength 10
+      - info: "sync command must recreate all Policies"
+        name: Fetch all Policies to confirm if they were synced
+        type: http
+        method: GET
+        url: '{{ .TYK_URL }}/api/portal/policies'
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        retry: 3
+        assertions:
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldHaveLength 2
+          - result.bodyjson ShouldContainKey Data
+          - result.bodyjson ShouldContainKey Pages
+          - result.bodyjson.Data ShouldHaveLength 5
+
+  - name: Check if sync command deletes APIs and Policies after using the --no--delete flag
+    steps:
+      - info: "remove api and policy items from json file"
+        type: exec
+        name: Run exec command to clean .tyk.json file
+        script: |
+          ../clear-tyk-json.sh
+          sleep 1;
+      - info: "run sync command"
+        type: exec
+        name: Run sync command with --no-delete flag
+        script: |
+          tyk-sync sync -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" --no-delete -p ../test
+          sleep 1;          
+      - info: "sync command should not delete APIs"
+        name: Fetch all APIs to confirm if they were not deleted on DB
+        type: http
+        method: GET
+        url: '{{ .TYK_URL }}/api/apis'
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        retry: 3
+        assertions:
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldHaveLength 2
+          - result.bodyjson ShouldContainKey apis
+          - result.bodyjson ShouldContainKey pages
+          - result.bodyjson.apis ShouldHaveLength 10
+      - info: "sync command must not delete Policies"
+        name: Fetch all Policies to confirm that they were not deleted on DB
+        type: http
+        method: GET
+        url: '{{ .TYK_URL }}/api/portal/policies'
+        headers:
+          Content-Type: application/json
+          Authorization: '{{ .TYK_AUTH }}'
+        retry: 3
+        assertions:
+          - result.bodyjson ShouldNotBeEmpty
+          - result.bodyjson ShouldHaveLength 2
+          - result.bodyjson ShouldContainKey Data
+          - result.bodyjson ShouldContainKey Pages
+          - result.bodyjson.Data ShouldHaveLength 5                 
