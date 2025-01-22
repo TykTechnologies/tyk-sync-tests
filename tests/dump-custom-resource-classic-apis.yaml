@@ -23,17 +23,21 @@ testcases:
               echo "The ../test directory contains only .yaml files."
           fi
         assertions:
-          - result.code MustEqual 0
+          - result.code MustEqual 0     
       - info: "verify that 5 classic API Definitions are dumped"
         script: |
           #!/bin/bash
-          count=$(find "../test" -type f -name "*\.yaml" | wc -l)
-          
-          if [ $count -eq 5 ]; then
-            echo "The '../test' directory contains exactly 5 YAML files."
+          echo "Counting files starting with 'api-' in the '../test' directory..."
+
+          count=$(find ../test/ -type f -name "api-*" | wc -l)
+
+          echo "Count: $count"
+
+          if [ "$count" -eq 5 ]; then
+            echo "The '../test' directory contains exactly 5 files starting with 'api-'."
             exit 0
           else
-            echo "The '../test' directory contains $count YAML files, which is not exactly 5."
+            echo "The '../test' directory contains $count files starting with 'api-', which is not exactly 5."
             exit 1
           fi
         assertions:

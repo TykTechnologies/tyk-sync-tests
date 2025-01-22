@@ -4,6 +4,7 @@ cd "$(dirname "$0")"
 set -e
 
 if which tyk-sync &> /dev/null; then
+    echo $(which tyk-sync)
     echo "tyk-sync exists on the machine, version: $(tyk-sync version)"
 else
     echo "tyk-sync does not exist"
@@ -15,8 +16,13 @@ if ! command -v jq &> /dev/null; then
     exit 1
 fi
 
-curl https://github.com/ovh/venom/releases/download/v1.2.0/venom.linux-amd64 -L -o /usr/local/bin/venom && chmod +x /usr/local/bin/venom
-echo "using venom $(venom -h)"
+if which venom &> /dev/null; then
+  echo $(which venom)
+  echo "venom exists on the machine, version: $(venom version)"
+else
+  curl https://github.com/ovh/venom/releases/download/v1.2.0/venom.linux-amd64 -L -o /usr/local/bin/venom && chmod +x /usr/local/bin/venom
+  echo "using venom $(venom -h)"
+fi
 
 TYK_AUTH=$(echo "$TYK_AUTH" | xargs)
 
@@ -24,6 +30,7 @@ initTykResources() {
   echo "... Clean test folder"
   rm -f ./test/*.json
   rm -f ./test/.tyk.json
+  rm -f ./logs/*
   sleep 1;
   echo "... Cleaned"
 
