@@ -160,3 +160,76 @@ testcases:
           - result.bodyjson ShouldContainKey Data
           - result.bodyjson ShouldContainKey Pages
           - result.bodyjson.Data ShouldHaveLength 5                 
+  
+  - name: Trigger sync update for only updated API
+    steps:
+      - info: "Remove API and policy items from .tyk.json file"
+        type: exec
+        name: Run exec command to clean .tyk.json file
+        script: |
+          ../clear-tyk-json.sh
+          sleep 1
+
+      - info: "First dump existing Tyk Dashboard resources"
+        script: |
+          tyk-sync dump -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -t ../test
+        assertions:
+          - result.code MustEqual 0
+
+      - info: "Get the first API under file section and update its name"
+        type: exec
+        name: Modify API file
+        script: |
+          #!/bin/bash
+          set -e
+
+          TYK_JSON_PATH="../test/.tyk.json"
+
+          if [ ! -f "$TYK_JSON_PATH" ]; then
+            echo "Error: $TYK_JSON_PATH not found" >&2
+            exit 1found in 
+          fi
+
+          TYK_JSON=$(cat "$TYK_JSON_PATH")
+
+          FIRST_API_FILE=$(echo "$TYK_JSON" | jq -r '.files[0].file')
+
+          if [ -z "$FIRST_API_FILE" ] || [ "$FIRST_API_FILE" = "null" ]; then
+            echo "Error: No API file found in $TYK_JSON_PATH 'files' array" >&2
+            exit 1
+          fi
+
+          API_FILE_PATH="../test/$FIRST_API_FILE"
+
+          if [ ! -f "$API_FILE_PATH" ]; then
+            echo "Error: API file $API_FILE_PATH not found" >&2
+            exit 1
+          fi
+
+          API_CONTENT=$(cat "$API_FILE_PATH")
+
+          RANDOM_PREFIX="prefixed"-$(openssl rand -base64 6 | tr -dc 'a-zA-Z0-9' | head -c 6)
+
+          UPDATED_API_CONTENT=$(echo "$API_CONTENT" | jq --arg prefix "$RANDOM_PREFIX" '.api_definition.name = "\($prefix)-" + .api_definition.name')
+
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to modify API content with jq" >&2
+            exit 1
+          fi
+
+          echo "$UPDATED_API_CONTENT" > "$API_FILE_PATH"
+
+          if [ $? -eq 0 ]; then
+            echo "Successfully updated $API_FILE_PATH with new name prefixed by '$RANDOM_PREFIX'"
+          else
+            echo "Error: Failed to write updated content to $API_FILE_PATH" >&2
+            exit 1
+          fi
+
+      - info: "Trigger sync update for the modified API"
+        script: |
+          tyk-sync sync -d "{{ .TYK_URL }}" -s="{{ .TYK_AUTH }}" -p ../test
+        assertions:
+          - result.code MustEqual 0
+          - result.systemout ShouldContainSubstring prefixed
+
